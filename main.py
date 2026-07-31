@@ -1,13 +1,11 @@
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
+from sqlmodel import Session, select
+from .database import tasks, create_db_tables, engine
 
 
-tasks = [
-    {"id":101, "title": "clean the room", "done": False},
-    {"id":102, "title": "check mail inbox", "done": True},
-    {"id":103, "title": "get grocery", "done": False}
-]
+
 
 class PostBody(BaseModel):
     title: str
@@ -31,6 +29,10 @@ def get_health():
 
 @app.get("/tasks", description="Display all the tasks stored in the app")
 def get_all_tasks():
+    with Session(engine) as session:
+        statement = select(tasks)
+        tasks = session.exec(statement).all
+
     return tasks
 
 @app.get("/tasks/{id}", description="Display the task based on ID")
