@@ -70,3 +70,33 @@ second endpoint should be a get method with path /health and it should respond w
 - AI used the pydantic model to set default values and to the validation checks
 - AI's PUT method will allow us it change both "title" and "done" and even just one of these
 - AI used the status codes for every endpoints, even where i missed
+
+# SQLite Database Overview
+
+## Why SQLite Was Chosen
+SQLite was selected as the database for this project due to the following key advantages:
+* **Lightweight & Embedded:** Runs in-process with a minimal memory footprint and zero external dependencies.
+* **Zero Configuration:** Requires no external installation, server setup, or downloads.
+* **Beginner-Friendly:** Ideal for small-to-medium projects, rapid prototyping, and quick local development setups.
+
+---
+
+## Database Storage Location
+* **File Name:** `mytasks.db`
+* **Location:** Automatically created in the root directory of your project upon running the server or application code.
+
+---
+
+## Example SQL Query
+Retrieve the titles of tasks with IDs between 2 and 4 (inclusive):
+
+```sql
+SELECT title 
+FROM tasks 
+WHERE id BETWEEN 2 AND 4;
+```
+
+## Database Screenshot
+
+![alt text](image1.png)
+
