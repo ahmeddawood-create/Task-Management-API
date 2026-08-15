@@ -1,11 +1,17 @@
 from sqlmodel import SQLModel, Field, create_engine,Session, select
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class tasks(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     title: str
     done: bool = Field(default=False)
 
-engine = create_engine("sqlite:///mytasks.db", echo=True)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+engine = create_engine(DATABASE_URL, echo=True)
 
 def create_db_tables():
     SQLModel.metadata.create_all(engine)
