@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from sqlmodel import Session, select
 from app.database import tasks, engine
+from app.supabase import supabase_signup
 
 
 
@@ -13,6 +14,10 @@ class PostBody(BaseModel):
 class UpdateBody(BaseModel):
     title: Optional[str] = None
     done: Optional[bool] = None
+
+class signupBody(BaseModel):
+    email: str = Field(min_length=2)
+    password: str = Field(min_length=8)
 
 
 app = FastAPI()
@@ -111,4 +116,11 @@ def delete_task(id: int):
             return {"detail":"task removed successfully"}
         
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="There is no content related to this id")
+
+@app.post("/auth/signup")
+def register_user(body: signupBody, status_code=status.HTTP_201_CREATED):
+    response = supabase_signup(body.email, body.password)
+    if response.user:
+        return
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
 
