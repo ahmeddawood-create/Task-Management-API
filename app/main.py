@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from typing import Optional
 from sqlmodel import Session, select
 from app.database import tasks, engine
-from app.supabase import supabase_signup
+from app.supabase import signupBody, supabase_signup, supabase_login, get_curr_user, supabase_logout
 
 
 
@@ -15,31 +15,27 @@ class UpdateBody(BaseModel):
     title: Optional[str] = None
     done: Optional[bool] = None
 
-class signupBody(BaseModel):
-    email: str = Field(min_length=2)
-    password: str = Field(min_length=8)
-
 
 app = FastAPI()
 
-@app.get("/", description="Welcome the user")
+@app.get("/", status_code=status.HTTP_200_OK , description="Welcome the user")
 def root_info():
     
     return { "name": "Task API", "version": "1.0", "endpoints": ["/tasks"] }
 
-@app.get("/health", description="Check if server is working")
+@app.get("/health",status_code=status.HTTP_200_OK , description="Check if server is working")
 def get_health():
     return { "status": "ok" }
 
 
-@app.get("/tasks", description="Display all the tasks stored in the app")
+@app.get("/tasks",status_code=status.HTTP_200_OK, description="Display all the tasks stored in the app")
 def get_all_tasks():
     with Session(engine) as session:
         statement = select(tasks)
         alltasks = session.exec(statement).all()
         return alltasks
 
-@app.get("/tasks/{id}", description="Display the task based on ID")
+@app.get("/tasks/{id}",status_code=status.HTTP_200_OK , description="Display the task based on ID")
 def get_by_id(id: int):
     with Session(engine) as session:
         statement = select(tasks).where(tasks.id==id)
@@ -74,7 +70,7 @@ def add_task(body: PostBody):
 
 
 
-@app.put("/tasks/{id}", description="Update the existing tasking based on ID")
+@app.put("/tasks/{id}",status_code=status.HTTP_200_OK, description="Update the existing tasking based on ID")
 def update_task(id: int, body: UpdateBody):
     with Session(engine) as session:
         statement = select(tasks).where(tasks.id == id)
@@ -117,10 +113,47 @@ def delete_task(id: int):
         
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="There is no content related to this id")
 
-@app.post("/auth/signup")
-def register_user(body: signupBody, status_code=status.HTTP_201_CREATED):
-    response = supabase_signup(body.email, body.password)
-    if response.user:
-        return
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+@app.post("/auth/signup", status_code=status.HTTP_201_CREATED)
+def register_user(body: signupBody):
+    try:
+        response = supabase_signup(body.email, body.password)
+        return {
+            "message": "Successfully signed up!",
+            "user_id": response.user.id,
+            "email": response.user.email
+        }
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
+@app.post("/auth/login", status_code=status.HTTP_200_OK)
+def login_user(body: signupBody):
+    try:
+        response =supabase_login(body.email,body.password)
+        return {
+            "access_token": response.session.access_token,
+            "refresh_token": response.session.refresh_token,
+            "token_type": "bearer",
+            "user": {
+                "id": response.user.id,
+                "email": response.user.email
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
+@app.get("/public/info", status_code=status.HTTP_200_OK)
+def get_public_info():
+    return { "message": "Welcome stranger! This info is public." }
+
+@app.get("/protected/profile", status_code=status.HTTP_200_OK)
+def get_protected_profile(curr_user = Depends(get_curr_user)):
+    return {
+        "message": "Welcome! It's a protected profile.",
+        "user_info": curr_user
+        
+    }
+
+@app.post("/auth/logout", status_code=status.HTTP_200_OK)
+def logout_user(curr_user = Depends(get_curr_user)):
+    supabase_logout(curr_user)
+    return {"message":"Successfully logout"}
