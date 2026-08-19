@@ -44,15 +44,14 @@ def get_curr_user(cred: HTTPAuthorizationCredentials = Depends(security)):
         if not response or not response.user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token")
 
-        return response.user
+        return {"user":response.user, "token":token}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     
 
-def supabase_logout(cred: HTTPAuthorizationCredentials = Depends(security)):
-    token = cred.credentials
+def supabase_logout(token: str):
     try:
-        response = supabase.auth.sign_out()
+        supabase.auth.admin.sign_out(token)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     

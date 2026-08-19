@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from typing import Optional
 from sqlmodel import Session, select
-from app.database import tasks, engine
-from app.supabase import signupBody, supabase_signup, supabase_login, get_curr_user, supabase_logout
+from database import tasks, engine
+from supabase_file import signupBody, supabase_signup, supabase_login, get_curr_user, supabase_logout
 
 
 
@@ -146,14 +146,15 @@ def get_public_info():
     return { "message": "Welcome stranger! This info is public." }
 
 @app.get("/protected/profile", status_code=status.HTTP_200_OK)
-def get_protected_profile(curr_user = Depends(get_curr_user)):
+def get_protected_profile(resp = Depends(get_curr_user)):
     return {
         "message": "Welcome! It's a protected profile.",
-        "user_info": curr_user
+        "user_info": resp["user"]
         
     }
 
 @app.post("/auth/logout", status_code=status.HTTP_200_OK)
-def logout_user(curr_user = Depends(get_curr_user)):
-    supabase_logout(curr_user)
+def logout_user(resp = Depends(get_curr_user)):
+    supabase_logout(resp["token"])
     return {"message":"Successfully logout"}
+
