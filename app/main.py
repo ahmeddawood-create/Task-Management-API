@@ -16,7 +16,7 @@ class UpdateBody(BaseModel):
     done: Optional[bool] = None
 
 
-app = FastAPI()
+app = FastAPI(title="TASK MANAGEMENT API")
 
 @app.get("/", status_code=status.HTTP_200_OK , description="Welcome the user")
 def root_info():
