@@ -1,102 +1,133 @@
-# FASTAPI SERVER FOR TASK APP
+# FastAPI Task API
 
-## How to use it?
+A FastAPI CRUD service for managing tasks. Tasks are stored in PostgreSQL through SQLModel, and Supabase provides authentication for the user-related endpoints.
 
-- Download these files on your PC
-- Create and activate a virtual environment (optional)
-    - In your terminal, run:
-        - python -m venv venv
-        - venv/Scripts/activate
-- Install FastAPI and other libraries (must)
-    -In your terminal, run:
-        - pip install fastapi[standard]
-- Run the server using the command in your terminal:
-    - fastapi dev
-- Now, you can run the curl commands to use the app, or you can open http://127.0.0.1:8000/ in your browser
-- Example curl command: curl "http://127.0.0.1:8000/tasks/101"
-- You can also access the Swagger UI made interactive documentation, on http://127.0.0.1:8000/docs
+## Requirements
 
+- Python 3.13 or Docker
+- A Supabase project for authentication
 
+## Configuration
 
-## What is ths app about?
+Create a `.env` file in the project root. It is ignored by Git.
 
-This is a task managing CRUD app to manage your daily tasks efficiently. It consists of  endpoints.
+```env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your-postgres-password
+POSTGRES_DB=tasks
+POSTGRES_PORT=5432
 
-## Table for Endpoints
-
-| Endpoint | Description | Parameters | Response |
-| :--- | :--- | :--- | :--- |
-| `GET /` | Welcome the user | *None* | `{"name": str, "version": str, "endpoints": list}` |
-| `GET /health` | Check if server is working | *None* | `{"status": "ok"}` |
-| `GET /tasks` | Display all the tasks stored in the app | *None* | `List[Task]` |
-| `GET /tasks/{id}` | Display the task based on ID | **Path:** `id` *(int)* | `Task` or `404 Not Found` |
-| `POST /tasks` | Add a new task to the app | **Body:** `{"title": str}` | `Task` *(201 Created)* or `400 Bad Request` |
-| `PUT /tasks/{id}` | Update the existing tasking based on ID | **Path:** `id` *(int)*<br>**Body:** `{"title"?: str, "done"?: bool}` | `Task` or `400 Bad Request` / `404 Not Found` |
-| `DELETE /tasks/{id}` | Remove a task from app based on ID | **Path:** `id` *(int)* | *204 No Content* or `404 Not Found` |
-
-## Screenshot of Endpoints in Swagger UI Documentation
-
-![alt text](image.png)
-
-## AI vs Me
-
-### My Prompt
-
-"i want you to create a fastapi app which include 7 endpoints
-
-you have to use http responses where needed in code
-
-initially created a list of dictionaries that will hold the task data
-there should be 3 already made tasks in the app
-each task should have an id (integer), a title(string), done (bool)
-
-first endpoint should be a get method that just responds with the app name, version and paths it is going to use
-
-second endpoint should be a get method with path /health and it should respond with status : ok in json format
-
-3rd endpoint should be get method and have the path /tasks and it should respond with all the tasks in json format
-
-4th endpoint should be get method and have the path /tasks/{id} and it should take an id as a parameter and it should respond with details of only one task according to id in json format  if the id doesnt exist raise a http exception
-
-
-5th endpoint should be a post method and it should have path /tasks and take a json body as parameter with only the title. you have to assign the id that is greater than the ids of existing tasks, you should set its "done" to false. you have to make sure the title should not be empty or missing. if the data is posted give 201 response and if the data is missing give bad request response
-
-6th endpoint should be a put method and it should have path /tasks and take json body  and an id as a parameter. the user should allowed to update the data of already existing task. you have to make sure that the body is not empty or the id is not available. if id is not available give 404 response, if json body is not acceptable then give bad request response
-
-7th endpoint should a delete method with path /tasks and take an id as parameter. it should be delete the task and give 204 response. if the id doesnt exist then give 404 response"
-
-### 3 differences
-
-- AI used the pydantic model to set default values and to the validation checks
-- AI's PUT method will allow us it change both "title" and "done" and even just one of these
-- AI used the status codes for every endpoints, even where i missed
-
-# SQLite Database Overview
-
-## Why SQLite Was Chosen
-SQLite was selected as the database for this project due to the following key advantages:
-* **Lightweight & Embedded:** Runs in-process with a minimal memory footprint and zero external dependencies.
-* **Zero Configuration:** Requires no external installation, server setup, or downloads.
-* **Beginner-Friendly:** Ideal for small-to-medium projects, rapid prototyping, and quick local development setups.
-
----
-
-## Database Storage Location
-* **File Name:** `mytasks.db`
-* **Location:** Automatically created in the root directory of your project upon running the server or application code.
-
----
-
-## Example SQL Query
-Retrieve the titles of tasks with IDs between 2 and 4 (inclusive):
-
-```sql
-SELECT title 
-FROM tasks 
-WHERE id BETWEEN 2 AND 4;
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-supabase-anon-key
 ```
 
-## Database Screenshot
+When using Docker Compose, `DATABASE_URL` is assembled automatically from the PostgreSQL values above. For a local process, add the connection string explicitly:
 
-![alt text](image1.png)
+```env
+DATABASE_URL=postgresql+psycopg2://postgres:your-postgres-password@localhost:5432/tasks
+```
+
+## Run With Docker
+
+```powershell
+docker compose up --build
+```
+
+The API is available at `http://localhost:8000`. Stop the containers with:
+
+```powershell
+docker compose down
+```
+
+## Run Locally
+
+Create a virtual environment, install the dependencies, and start Uvicorn from the `app` directory:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+cd app
+uvicorn main:app --reload
+```
+
+Interactive API documentation is available at:
+
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+## API Endpoints
+
+### General
+
+| Method | Path | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` | Returns the API name, version, and main endpoint path. |
+| `GET` | `/health` | Returns the service health status. |
+
+### Tasks
+
+| Method | Path | Description | Success |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/tasks` | Returns all tasks. | `200 OK` |
+| `GET` | `/tasks/{id}` | Returns one task by integer ID. | `200 OK` |
+| `POST` | `/tasks` | Creates a task with a `title`. | `201 Created` |
+| `PUT` | `/tasks/{id}` | Updates `title`, `done`, or both. | `200 OK` |
+| `DELETE` | `/tasks/{id}` | Deletes a task by ID. | `204 No Content` |
+
+Task objects have this shape:
+
+```json
+{
+    "id": 1,
+    "title": "Pack your bag",
+    "done": false
+}
+```
+
+Create a task:
+
+```powershell
+curl -X POST http://localhost:8000/tasks `
+    -H "Content-Type: application/json" `
+    -d '{"title":"Read the documentation"}'
+```
+
+Update a task:
+
+```powershell
+curl -X PUT http://localhost:8000/tasks/1 `
+    -H "Content-Type: application/json" `
+    -d '{"done":true}'
+```
+
+### Authentication
+
+| Method | Path | Description | Authentication |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/auth/signup` | Creates a Supabase user. | None |
+| `POST` | `/auth/login` | Signs in a user and returns access tokens. | None |
+| `POST` | `/auth/logout` | Signs out the current user. | Bearer token |
+| `GET` | `/public/info` | Returns public information. | None |
+| `GET` | `/protected/profile` | Returns the authenticated user profile. | Bearer token |
+
+Sign up or log in with this request body:
+
+```json
+{
+    "email": "user@example.com",
+    "password": "your-password"
+}
+```
+
+For protected endpoints, send the access token returned by `/auth/login`:
+
+```powershell
+curl http://localhost:8000/protected/profile `
+    -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+## Database
+
+The application creates the `tasks` table on startup and seeds three tasks when the table is empty. PostgreSQL data is persisted in the `postgres_data` Docker volume.
 
